@@ -67,11 +67,11 @@ source:
     target_directory: linux-npu-driver-${{ version }}/third_party/npu_compiler_elf
 
 build:
-  number: 3
+  number: 4
   # Only the Linux userspace driver is supported (x86 intrinsics like
   # -msse4.2 / -mwaitpkg; conda-forge only builds linux-64 here). The bare
   # boolean form lets conda-smithy prune osx/win from the CI matrix.
-  skip: osx or win
+  skip: not linux64
   # Intel follows the oneAPI Level Zero SOVERSION = MAJOR convention:
   # libze_intel_npu sets SOVERSION = PROJECT_VERSION_MAJOR in cmake, so
   # the .so SONAME is libze_intel_npu.so.1. ABI is guaranteed within a
