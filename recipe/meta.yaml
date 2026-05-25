@@ -39,6 +39,12 @@ source:
     patches:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
       - patches/0002-umd-gate-unit_tests-on-ENABLE_NPU_UNIT_TESTS.patch
+      # LTO emits "fat" objects whose symbols live in bytecode, not the
+      # ELF .symtab; plain `ar` then writes a static-archive index missing
+      # those symbols, so the linker leaves the driver's own internals
+      # (L0::*) undefined in libze_intel_npu.so. Build the archives with
+      # the LTO-plugin-aware gcc-ar/gcc-ranlib instead.
+      - patches/0003-umd-use-LTO-plugin-aware-ar-ranlib-for-static-libs.patch
   # third_party/level-zero-npu-extensions: NPU-specific Level Zero
   # extension headers. Not packaged separately on conda-forge; carried
   # as a vendored source archive at the upstream-pinned rev.
@@ -55,7 +61,7 @@ source:
     folder: linux-npu-driver-{{ version }}/third_party/npu_compiler_elf
 
 build:
-  number: 0
+  number: 1
   skip: true  # [not linux64]
   # Intel follows the oneAPI Level Zero SOVERSION = MAJOR convention:
   # libze_intel_npu sets SOVERSION = PROJECT_VERSION_MAJOR in cmake, so
@@ -64,13 +70,6 @@ build:
   # pin downstream consumers to the same major only.
   run_exports:
     - {{ pin_subpackage('intel-level-zero-npu', max_pin='x') }}
-  # level-zero-devel pulls in level-zero via its own run_exports, but
-  # this driver does NOT link against libze_loader at build time; the
-  # relationship is the other way around (libze_loader.so dlopens us).
-  # Silence the "DSO not used" warning by suppressing the run_exports
-  # from level-zero on us.
-  ignore_run_exports_from:
-    - level-zero-devel
 
 requirements:
   build:
@@ -81,11 +80,6 @@ requirements:
     - ninja
     - pkg-config
   host:
-    # We compile against the Level Zero headers (ze_api.h etc.) and need
-    # CMake's level-zero find module. libze_intel_npu.so does NOT link
-    # against libze_loader.so though — the loader dlopens us, not the
-    # other way around — so level-zero's run_exports are suppressed via
-    # ignore_run_exports_from above.
     - level-zero-devel
 
 test:

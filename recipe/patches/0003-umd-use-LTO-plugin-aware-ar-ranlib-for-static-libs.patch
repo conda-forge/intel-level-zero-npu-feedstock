@@ -1,0 +1,77 @@
+From: hmaarrfk <mark.harfouche@conda-forge.org>
+Date: 2026-05-25
+Subject: umd: use LTO-plugin-aware ar/ranlib so static-lib symbols resolve
+
+umd/CMakeLists.txt turns on link-time optimization unconditionally with
+`add_compile_options(-flto=auto)` / `add_link_options(-flto=auto)`. With
+-flto, GCC emits "fat" object files whose symbols live in GNU LTO
+bytecode sections (.gnu.lto_*) and *not* in the regular ELF .symtab.
+
+The userspace driver is then assembled by linking the thin api objects
+(umd/level_zero_driver/api/*.cpp) against two static libraries built from
+those LTO objects:
+
+    libze_intel_npu.so  <-  ze_*.cpp.o  +  liblevel_zero_driver.a
+                                          +  libvpu_driver.a
+
+CMake creates those archives with the plain binutils `ar`/`ranlib`
+(CMAKE_AR), which only reads the ELF .symtab when building the archive
+index (armap). For an LTO object the .symtab is almost empty, so the
+armap ends up listing essentially none of the real symbols:
+
+    $ nm --print-armap liblevel_zero_driver.a | grep -c _ZN2L0   # armap
+    0
+    $ nm              liblevel_zero_driver.a | grep -c ' T _ZN2L0' # defined
+    257
+
+The linker decides which archive members to extract from that index, so
+it never pulls the members that define L0::CommandList::create and the
+257 other L0:: implementation symbols. Combined with conda-forge's
+default `-Wl,--allow-shlib-undefined`, the link "succeeds" but produces a
+libze_intel_npu.so riddled with undefined symbols that nothing will ever
+provide at runtime (they are the driver's own internals).
+
+The fix is to build the archives with the compiler's LTO-plugin-aware
+ar/ranlib wrappers (gcc-ar / gcc-ranlib). CMake already discovers these
+as CMAKE_CXX_COMPILER_AR / CMAKE_CXX_COMPILER_RANLIB (it uses them itself
+when LTO is enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION); point
+CMAKE_AR / CMAKE_RANLIB at them so the armap covers the LTO symbols too.
+
+Paths in this patch are prefixed with `linux-npu-driver-1.32.1/`
+because conda-build extracts this source with `no_hoist: true` and
+applies patches from the recipe's work_dir (one level above the
+upstream root).
+---
+ linux-npu-driver-1.32.1/umd/CMakeLists.txt | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+diff --git a/linux-npu-driver-1.32.1/umd/CMakeLists.txt b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
+index d6b3527..6dbcb64 100644
+--- a/linux-npu-driver-1.32.1/umd/CMakeLists.txt
++++ b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
+@@ -53,6 +53,24 @@ add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fvisibility-inlines-hidden>)
+ add_compile_options(-flto=auto)
+ add_link_options(-flto=auto)
+
++# Building with -flto emits "fat" object files whose symbols live in GNU
++# LTO bytecode sections (.gnu.lto_*) rather than in the regular ELF
++# .symtab. When such objects are collected into a static library
++# (level_zero_driver, vpu_driver), a plain `ar`/`ranlib` only reads the
++# ELF .symtab and therefore writes an archive index (armap) that omits
++# every LTO-only symbol. The linker uses that index to decide which
++# archive members to pull, so it never extracts the members defining e.g.
++# L0::CommandList::create and leaves them undefined in libze_intel_npu.so.
++# Use the compiler's LTO-plugin-aware ar/ranlib wrappers (gcc-ar /
++# gcc-ranlib), which CMake has already discovered, so that the archive
++# index covers the LTO symbols too.
++if(CMAKE_CXX_COMPILER_AR)
++    set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
++endif()
++if(CMAKE_CXX_COMPILER_RANLIB)
++    set(CMAKE_RANLIB "${CMAKE_CXX_COMPILER_RANLIB}")
++endif()
++
+ # Project-wide include paths
+ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vpu_driver/include")
+ include_directories(${VPU_SOURCE_DIR})
+--
+2.54.0
