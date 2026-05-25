@@ -46,6 +46,10 @@ source:
       # libze_intel_npu.so. Switch to CMake IPO so the LTO-plugin-aware
       # gcc-ar/gcc-ranlib are used. Guarded by the test below.
       - patches/0003-umd-enable-LTO-via-IPO-so-static-libs-use-gcc-ar.patch
+      # Upstream forces CMAKE_BUILD_TYPE=Release and then appends -g, so
+      # libze_intel_npu.so ships ~17 MB of unstripped DWARF (18.9 MB vs
+      # 1.4 MB) and the LTO link is slower. Drop -g from the Release flags.
+      - patches/0004-umd-do-not-add-g-to-Release-builds.patch
   # third_party/level-zero-npu-extensions: NPU-specific Level Zero
   # extension headers. Not packaged separately on conda-forge; carried
   # as a vendored source archive at the upstream-pinned rev.
@@ -62,7 +66,7 @@ source:
     folder: linux-npu-driver-{{ version }}/third_party/npu_compiler_elf
 
 build:
-  number: 2
+  number: 3
   skip: true  # [not linux64]
   # Intel follows the oneAPI Level Zero SOVERSION = MAJOR convention:
   # libze_intel_npu sets SOVERSION = PROJECT_VERSION_MAJOR in cmake, so
