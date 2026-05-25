@@ -40,11 +40,12 @@ source:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
       - patches/0002-umd-gate-unit_tests-on-ENABLE_NPU_UNIT_TESTS.patch
       # LTO emits "fat" objects whose symbols live in bytecode, not the
-      # ELF .symtab; plain `ar` then writes a static-archive index missing
-      # those symbols, so the linker leaves the driver's own internals
-      # (L0::*) undefined in libze_intel_npu.so. Build the archives with
-      # the LTO-plugin-aware gcc-ar/gcc-ranlib instead.
-      - patches/0003-umd-use-LTO-plugin-aware-ar-ranlib-for-static-libs.patch
+      # ELF .symtab; with raw -flto flags CMake archives the static libs
+      # with plain `ar`, whose index then misses those symbols, so the
+      # linker leaves the driver's own internals (L0::*) undefined in
+      # libze_intel_npu.so. Switch to CMake IPO so the LTO-plugin-aware
+      # gcc-ar/gcc-ranlib are used. Guarded by the test below.
+      - patches/0003-umd-enable-LTO-via-IPO-so-static-libs-use-gcc-ar.patch
   # third_party/level-zero-npu-extensions: NPU-specific Level Zero
   # extension headers. Not packaged separately on conda-forge; carried
   # as a vendored source archive at the upstream-pinned rev.
@@ -83,8 +84,20 @@ requirements:
     - level-zero-devel
 
 test:
+  requires:
+    # nm, to inspect the driver's dynamic symbols in the check below
+    - binutils
   commands:
     - test -f $PREFIX/lib/libze_intel_npu.so
+    # Regression guard for the LTO / static-archive-index bug fixed by
+    # patches/0003: libze_intel_npu.so statically links the driver's own
+    # implementation (the L0:: and VPU:: C++ classes, mangled _ZN2L0 /
+    # _ZN3VPU) out of liblevel_zero_driver.a / libvpu_driver.a. If those
+    # archives are indexed by a non-LTO-plugin-aware `ar`, the members are
+    # never pulled and ~250 of these symbols come back UNDEFINED (U) in the
+    # final library. A correctly linked driver has zero undefined L0::/VPU::
+    # symbols, so fail the build if any remain.
+    - test -z "$(nm -D -u $PREFIX/lib/libze_intel_npu.so | grep -E '_ZN2L0|_ZN3VPU')"
 
 about:
   home: https://github.com/intel/linux-npu-driver
