@@ -1,0 +1,76 @@
+From: hmaarrfk <mark.harfouche@conda-forge.org>
+Date: 2026-05-25
+Subject: umd: enable LTO via IPO so static libs are archived with gcc-ar
+
+umd/CMakeLists.txt turns on link-time optimization unconditionally with
+`add_compile_options(-flto=auto)` / `add_link_options(-flto=auto)`. With
+-flto, GCC emits "fat" object files whose symbols live in GNU LTO
+bytecode sections (.gnu.lto_*) and *not* in the regular ELF .symtab.
+
+The userspace driver is then assembled by linking the thin api objects
+(umd/level_zero_driver/api/*.cpp) against two static libraries built from
+those LTO objects:
+
+    libze_intel_npu.so  <-  ze_*.cpp.o  +  liblevel_zero_driver.a
+                                          +  libvpu_driver.a
+
+Because LTO was requested with raw flags rather than through CMake's
+INTERPROCEDURAL_OPTIMIZATION machinery, the static-library targets are
+archived with the plain CMAKE_AR / CMAKE_RANLIB (binutils `ar`/`ranlib`).
+Those build the archive index (armap) from the ELF .symtab only, which
+for an LTO object is nearly empty, so the index lists essentially none of
+the real symbols:
+
+    $ nm --print-armap liblevel_zero_driver.a | grep -c _ZN2L0   # armap
+    0
+    $ nm              liblevel_zero_driver.a | grep -c ' T _ZN2L0' # defined
+    257
+
+The linker picks archive members to extract from that index, so it never
+pulls the members defining L0::CommandList::create and the other ~250
+L0::/VPU:: implementation symbols. Combined with conda-forge's default
+`-Wl,--allow-shlib-undefined`, the link "succeeds" but produces a
+libze_intel_npu.so riddled with undefined symbols that nothing will ever
+provide at runtime (they are the driver's own internals).
+
+Enable LTO through CMake's INTERPROCEDURAL_OPTIMIZATION instead. CMake
+still emits -flto=auto for GCC (so parallel LTO is preserved), but it now
+also archives the static libraries with the LTO-plugin-aware gcc-ar /
+gcc-ranlib (its CMAKE_<LANG>_ARCHIVE_*_IPO rules, which use
+CMAKE_<LANG>_COMPILER_AR / _RANLIB) so the archive index covers the LTO
+symbols. This is scoped per target via the INTERPROCEDURAL_OPTIMIZATION
+property rather than globally overriding CMAKE_AR. CMP0069 is NEW here
+(cmake_minimum_required(VERSION 3.22)), so the property is honoured.
+
+Paths in this patch are prefixed with `linux-npu-driver-1.32.1/`
+because conda-build extracts this source with `no_hoist: true` and
+applies patches from the recipe's work_dir (one level above the
+upstream root).
+---
+ linux-npu-driver-1.32.1/umd/CMakeLists.txt | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+diff --git a/linux-npu-driver-1.32.1/umd/CMakeLists.txt b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
+index d6b3527..7e92d47 100644
+--- a/linux-npu-driver-1.32.1/umd/CMakeLists.txt
++++ b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
+@@ -50,8 +50,16 @@ add_compile_options(-Winvalid-pch -Wconversion -Wuninitialized -ftrapv)
+ add_compile_options(-fvisibility=hidden)
+ add_compile_options(-mwaitpkg)
+ add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fvisibility-inlines-hidden>)
+-add_compile_options(-flto=auto)
+-add_link_options(-flto=auto)
++# Enable link-time optimization through CMake's own IPO machinery instead
++# of raw -flto flags. This still gives parallel LTO (for GCC, CMake emits
++# -flto=auto) but, crucially, it makes CMake archive the static libraries
++# with the LTO-plugin-aware gcc-ar / gcc-ranlib (its ARCHIVE_*_IPO rules)
++# rather than plain `ar`. Plain `ar` builds the archive index from the ELF
++# .symtab only, which for LTO "fat" objects omits the real symbols, so the
++# linker never pulls the archive members defining L0::CommandList::create
++# and the other ~250 L0::/VPU:: internals, leaving them undefined in
++# libze_intel_npu.so. (CMP0069 is NEW here: cmake_minimum_required >= 3.9.)
++set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+
+ # Project-wide include paths
+ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vpu_driver/include")
+--
+2.54.0
