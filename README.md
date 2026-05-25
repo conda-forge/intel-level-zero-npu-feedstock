@@ -26,7 +26,6 @@ OpenVINO inference on NPU, two further pieces are required at runtime:
     Install them system-wide (linux-firmware, or the intel-fw-npu
     .deb from intel/linux-npu-driver releases on Ubuntu).
 
-
 Current build status
 ====================
 
