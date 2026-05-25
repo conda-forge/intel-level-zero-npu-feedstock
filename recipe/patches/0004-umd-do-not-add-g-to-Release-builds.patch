@@ -1,0 +1,45 @@
+From: hmaarrfk <mark.harfouche@conda-forge.org>
+Date: 2026-05-25
+Subject: umd: do not add -g to Release builds
+
+umd/CMakeLists.txt unconditionally appends -g to the Release flags:
+
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
+
+The top-level CMakeLists.txt defaults CMAKE_BUILD_TYPE to Release, so
+every build is effectively RelWithDebInfo and the driver ships with full
+DWARF. For libze_intel_npu.so that is ~17 MB of .debug_* sections on top
+of ~1.4 MB of actual code: the installed library is 18.9 MB instead of
+1.4 MB (conda-build does not strip it), and the LTO link has to merge all
+of that debug info, which slows the build.
+
+The debug info is never mapped at runtime (non-ALLOC sections), so it has
+no functional value in a distributed runtime package; if debug symbols
+are wanted they belong in a separate artifact, not the main library. Drop
+the -g additions and let the Release optimisation flags stand on their
+own.
+
+Paths in this patch are prefixed with `linux-npu-driver-1.32.1/`
+because conda-build extracts this source with `no_hoist: true` and
+applies patches from the recipe's work_dir (one level above the
+upstream root).
+---
+ linux-npu-driver-1.32.1/umd/CMakeLists.txt | 3 ---
+ 1 file changed, 3 deletions(-)
+diff --git a/linux-npu-driver-1.32.1/umd/CMakeLists.txt b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
+index 7e92d47..170f3ac 100644
+--- a/linux-npu-driver-1.32.1/umd/CMakeLists.txt
++++ b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
+@@ -34,9 +34,6 @@ else()
+     add_compile_options(-Wno-unused-but-set-variable -Wno-unused-variable)
+ endif()
+
+-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g")
+-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
+-
+ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DUMD_LOGLEVEL=${UMD_LOGLEVEL}")
+
+ set(CMAKE_CXX_STANDARD 17)
+--
+2.54.0
