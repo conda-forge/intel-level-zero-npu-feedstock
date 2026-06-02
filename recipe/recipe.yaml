@@ -19,7 +19,7 @@ schema_version: 1
 # is available on conda-forge.
 
 context:
-  version: "1.32.1"
+  version: "1.33.0"
   lze_npu_extensions_rev: "42768cc73e74f6d371bd9dd51b1860b07774e7ec"
   npu_compiler_elf_rev: "82c444bcb9feb0f55fa33e18fbd711ec35426fba"
 
@@ -35,7 +35,7 @@ source:
   # license_file paths below expect, and so the vendored third_party
   # sources nest inside it.
   - url: https://github.com/intel/linux-npu-driver/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: e83ff30e1b9f0f8dfd9e04362a39141c126c1b3df8dba688c4f9515bd2d3bed5
+    sha256: 2c25feabf471ae49d8dc99dca7c584113b0a25a3ef045ba834ce65f731fde7f5
     target_directory: linux-npu-driver-${{ version }}
     patches:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
@@ -67,7 +67,7 @@ source:
     target_directory: linux-npu-driver-${{ version }}/third_party/npu_compiler_elf
 
 build:
-  number: 4
+  number: 0
   # Only the Linux userspace driver is supported (x86 intrinsics like
   # -msse4.2 / -mwaitpkg; conda-forge only builds linux-64 here). The bare
   # boolean form lets conda-smithy prune osx/win from the CI matrix.
