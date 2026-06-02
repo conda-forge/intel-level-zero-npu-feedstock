@@ -20,7 +20,7 @@ schema_version: 1
 
 context:
   version: "1.33.0"
-  lze_npu_extensions_rev: "42768cc73e74f6d371bd9dd51b1860b07774e7ec"
+  lze_npu_extensions_rev: "c7cb5d218ca14f6a81b3ef0bb89e718e9fcdba8e"
   npu_compiler_elf_rev: "82c444bcb9feb0f55fa33e18fbd711ec35426fba"
 
 package:
@@ -44,11 +44,16 @@ source:
       # libze_intel_npu.so ships ~17 MB of unstripped DWARF (18.9 MB vs
       # 1.4 MB) and the LTO link is slower. Drop -g from the Release flags.
       - patches/0004-umd-do-not-add-g-to-Release-builds.patch
+      # The driver targets Level Zero 1.27.0 but is built here against the
+      # newer conda-forge level-zero (matching the runtime loader), whose
+      # DDI tables have members the driver leaves null. Keep that warning
+      # non-fatal instead of failing the -Werror build.
+      - patches/0005-relax-missing-field-initializers-for-newer-level-zero.patch
   # third_party/level-zero-npu-extensions: NPU-specific Level Zero
   # extension headers. Not packaged separately on conda-forge; carried
   # as a vendored source archive at the upstream-pinned rev.
   - url: https://github.com/intel/level-zero-vpu-extensions/archive/${{ lze_npu_extensions_rev }}.tar.gz
-    sha256: 340b6c6757febfc55e5e707e2b5ab9d2cd0a526e82d921ee192c9ef5675bfe40
+    sha256: 72dd945869f773d21a4042feb069f4841866e9a4057575eb3588320d3768961e
     target_directory: linux-npu-driver-${{ version }}/third_party/level-zero-npu-extensions
   # third_party/npu_compiler_elf: small Apache-2.0 ELF reader/writer +
   # VPUX loader, statically linked into libze_intel_npu.so. Upstream is
