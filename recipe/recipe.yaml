@@ -40,14 +40,6 @@ source:
     patches:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
       - patches/0002-umd-gate-unit_tests-on-ENABLE_NPU_UNIT_TESTS.patch
-      # NB: the former patch 0003 (enable LTO via CMake IPO so the static
-      # libs are archived with the LTO-plugin-aware gcc-ar/gcc-ranlib
-      # instead of plain `ar`, whose index misses the LTO "fat" object
-      # symbols and left the driver's own L0::/VPU:: internals undefined)
-      # is upstream as of v1.33.0 — umd/CMakeLists.txt now sets
-      # CMAKE_INTERPROCEDURAL_OPTIMIZATION itself — so the patch was
-      # dropped. The undefined-symbol regression guard in tests below is
-      # kept to catch any future regression of that fix.
       # Upstream forces CMAKE_BUILD_TYPE=Release and then appends -g, so
       # libze_intel_npu.so ships ~17 MB of unstripped DWARF (18.9 MB vs
       # 1.4 MB) and the LTO link is slower. Drop -g from the Release flags.
@@ -99,10 +91,9 @@ tests:
         - binutils
     script:
       - test -f $PREFIX/lib/libze_intel_npu.so
-      # Regression guard for the LTO / static-archive-index bug (fixed
-      # upstream in v1.33.0 via CMAKE_INTERPROCEDURAL_OPTIMIZATION; was
-      # formerly carried as patch 0003): libze_intel_npu.so statically
-      # links the driver's own
+      # Regression guard for the LTO / static-archive-index bug that
+      # CMAKE_INTERPROCEDURAL_OPTIMIZATION fixes: libze_intel_npu.so
+      # statically links the driver's own
       # implementation (the L0:: and VPU:: C++ classes, mangled _ZN2L0 /
       # _ZN3VPU) out of liblevel_zero_driver.a / libvpu_driver.a. If those
       # archives are indexed by a non-LTO-plugin-aware `ar`, the members
