@@ -17,17 +17,17 @@ this one.
 
 The library output of this driver (libze_intel_npu.so) is unchanged.
 
-Paths in this patch are prefixed with `linux-npu-driver-1.32.1/`
+Paths in this patch are prefixed with `linux-npu-driver-1.33.0/`
 because conda-build extracts this source with `no_hoist: true` and
 applies patches from the recipe's work_dir (one level above the
 upstream root).
 ---
- linux-npu-driver-1.32.1/third_party/CMakeLists.txt | 16 +++++++++++-----
+ linux-npu-driver-1.33.0/third_party/CMakeLists.txt | 16 +++++++++++-----
  1 file changed, 11 insertions(+), 5 deletions(-)
-diff --git a/linux-npu-driver-1.32.1/third_party/CMakeLists.txt b/linux-npu-driver-1.32.1/third_party/CMakeLists.txt
+diff --git a/linux-npu-driver-1.33.0/third_party/CMakeLists.txt b/linux-npu-driver-1.33.0/third_party/CMakeLists.txt
 index 0f7c3ad..f20f217 100644
---- a/linux-npu-driver-1.32.1/third_party/CMakeLists.txt
-+++ b/linux-npu-driver-1.32.1/third_party/CMakeLists.txt
+--- a/linux-npu-driver-1.33.0/third_party/CMakeLists.txt
++++ b/linux-npu-driver-1.33.0/third_party/CMakeLists.txt
 @@ -14,9 +14,15 @@ if (ENABLE_NPU_PERFETTO_BUILD)
    include(cmake/perfetto.cmake)
  endif()

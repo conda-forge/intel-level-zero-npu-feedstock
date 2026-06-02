@@ -19,8 +19,8 @@ schema_version: 1
 # is available on conda-forge.
 
 context:
-  version: "1.32.1"
-  lze_npu_extensions_rev: "42768cc73e74f6d371bd9dd51b1860b07774e7ec"
+  version: "1.33.0"
+  lze_npu_extensions_rev: "c7cb5d218ca14f6a81b3ef0bb89e718e9fcdba8e"
   npu_compiler_elf_rev: "82c444bcb9feb0f55fa33e18fbd711ec35426fba"
 
 package:
@@ -35,27 +35,25 @@ source:
   # license_file paths below expect, and so the vendored third_party
   # sources nest inside it.
   - url: https://github.com/intel/linux-npu-driver/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: e83ff30e1b9f0f8dfd9e04362a39141c126c1b3df8dba688c4f9515bd2d3bed5
+    sha256: 2c25feabf471ae49d8dc99dca7c584113b0a25a3ef045ba834ce65f731fde7f5
     target_directory: linux-npu-driver-${{ version }}
     patches:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
       - patches/0002-umd-gate-unit_tests-on-ENABLE_NPU_UNIT_TESTS.patch
-      # LTO emits "fat" objects whose symbols live in bytecode, not the
-      # ELF .symtab; with raw -flto flags CMake archives the static libs
-      # with plain `ar`, whose index then misses those symbols, so the
-      # linker leaves the driver's own internals (L0::*) undefined in
-      # libze_intel_npu.so. Switch to CMake IPO so the LTO-plugin-aware
-      # gcc-ar/gcc-ranlib are used. Guarded by the test below.
-      - patches/0003-umd-enable-LTO-via-IPO-so-static-libs-use-gcc-ar.patch
       # Upstream forces CMAKE_BUILD_TYPE=Release and then appends -g, so
       # libze_intel_npu.so ships ~17 MB of unstripped DWARF (18.9 MB vs
       # 1.4 MB) and the LTO link is slower. Drop -g from the Release flags.
       - patches/0004-umd-do-not-add-g-to-Release-builds.patch
+      # The driver targets Level Zero 1.27.0 but is built here against the
+      # newer conda-forge level-zero (matching the runtime loader), whose
+      # DDI tables have members the driver leaves null. Keep that warning
+      # non-fatal instead of failing the -Werror build.
+      - patches/0005-relax-missing-field-initializers-for-newer-level-zero.patch
   # third_party/level-zero-npu-extensions: NPU-specific Level Zero
   # extension headers. Not packaged separately on conda-forge; carried
   # as a vendored source archive at the upstream-pinned rev.
   - url: https://github.com/intel/level-zero-vpu-extensions/archive/${{ lze_npu_extensions_rev }}.tar.gz
-    sha256: 340b6c6757febfc55e5e707e2b5ab9d2cd0a526e82d921ee192c9ef5675bfe40
+    sha256: 72dd945869f773d21a4042feb069f4841866e9a4057575eb3588320d3768961e
     target_directory: linux-npu-driver-${{ version }}/third_party/level-zero-npu-extensions
   # third_party/npu_compiler_elf: small Apache-2.0 ELF reader/writer +
   # VPUX loader, statically linked into libze_intel_npu.so. Upstream is
@@ -67,7 +65,7 @@ source:
     target_directory: linux-npu-driver-${{ version }}/third_party/npu_compiler_elf
 
 build:
-  number: 4
+  number: 0
   # Only the Linux userspace driver is supported (x86 intrinsics like
   # -msse4.2 / -mwaitpkg; conda-forge only builds linux-64 here). The bare
   # boolean form lets conda-smithy prune osx/win from the CI matrix.
@@ -98,8 +96,9 @@ tests:
         - binutils
     script:
       - test -f $PREFIX/lib/libze_intel_npu.so
-      # Regression guard for the LTO / static-archive-index bug fixed by
-      # patches/0003: libze_intel_npu.so statically links the driver's own
+      # Regression guard for the LTO / static-archive-index bug that
+      # CMAKE_INTERPROCEDURAL_OPTIMIZATION fixes: libze_intel_npu.so
+      # statically links the driver's own
       # implementation (the L0:: and VPU:: C++ classes, mangled _ZN2L0 /
       # _ZN3VPU) out of liblevel_zero_driver.a / libvpu_driver.a. If those
       # archives are indexed by a non-LTO-plugin-aware `ar`, the members

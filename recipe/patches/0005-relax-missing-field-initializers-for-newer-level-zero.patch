@@ -1,0 +1,49 @@
+From: hmaarrfk <mark.harfouche@conda-forge.org>
+Date: 2026-06-02
+Subject: relax -Werror=missing-field-initializers for newer Level Zero headers
+
+This driver targets Level Zero 1.27.0 (cmake/level-zero.cmake), but the
+recipe builds it against the conda-forge `level-zero` package, currently
+1.29.0, so that the userspace driver matches the loader it is dlopened
+by at runtime. The newer loader headers add members to the Level Zero
+DDI tables (e.g. ze_command_list_dditable_t::pfnAppendMemoryCopyWith-
+Parameters, ze_device_dditable_t::pfnGetRuntimeRequirements). The driver
+fills those tables with designated initializers that only name the
+entries it implements, so the new members are value-initialized to null:
+
+    umd/level_zero_driver/api/ze_cmdlist.cpp:658: error: missing
+      initializer for member
+      '_ze_command_list_dditable_t::pfnAppendMemoryCopyWithParameters'
+      [-Werror=missing-field-initializers]
+
+Leaving those entries null is correct — they are functions this driver
+predates, and the loader treats a null entry as unsupported. Only the
+combination with -Werror (cmake/compiler_flags.cmake) turns the warning
+into a build failure. Keep the warning but drop it back to non-fatal
+with -Wno-error=missing-field-initializers, rather than pinning the host
+to an older level-zero than the one users will run against.
+
+Paths in this patch are prefixed with `linux-npu-driver-1.33.0/`
+because conda-build extracts this source with `no_hoist: true` and
+applies patches from the recipe's work_dir (one level above the
+upstream root).
+---
+ linux-npu-driver-1.33.0/cmake/compiler_flags.cmake | 6 ++++++
+ 1 file changed, 6 insertions(+)
+diff --git a/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake b/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake
+index 0cc74c7..cfd1715 100644
+--- a/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake
++++ b/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake
+@@ -5,6 +5,12 @@
+ add_compile_options(
+   # Compiler warnings
+   -Wall -Wextra -Werror -Wno-unused-parameter -Wvla -Wno-error=cpp
++  # The Level Zero loader headers we build against (conda-forge
++  # level-zero) are newer than the version this driver targets, so the
++  # DDI tables it fills have members it does not initialize. Those are
++  # intentionally left null (features this driver predates); keep the
++  # warning but do not let -Werror turn it into a hard failure.
++  -Wno-error=missing-field-initializers
+   # Control flow integrity
+   $<$<CONFIG:Release>:-fcf-protection=full>
+   # Format string defence
