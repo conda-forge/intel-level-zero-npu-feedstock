@@ -15,39 +15,39 @@ gates both unit_tests subdir adds. The validation/ tree, which has its
 own larger test app and is gated by ENABLE_VALIDATION_BUILD, is
 untouched.
 
-Paths in this patch are prefixed with `linux-npu-driver-1.32.1/`
+Paths in this patch are prefixed with `linux-npu-driver-1.33.0/`
 because conda-build extracts this source with `no_hoist: true` and
 applies patches from the recipe's work_dir (one level above the
 upstream root).
 ---
- linux-npu-driver-1.32.1/CMakeLists.txt     | 1 +
- linux-npu-driver-1.32.1/umd/CMakeLists.txt | 8 ++++++--
+ linux-npu-driver-1.33.0/CMakeLists.txt     | 1 +
+ linux-npu-driver-1.33.0/umd/CMakeLists.txt | 8 ++++++--
  2 files changed, 7 insertions(+), 2 deletions(-)
-diff --git a/linux-npu-driver-1.32.1/CMakeLists.txt b/linux-npu-driver-1.32.1/CMakeLists.txt
-index ffff02f..d682665 100644
---- a/linux-npu-driver-1.32.1/CMakeLists.txt
-+++ b/linux-npu-driver-1.32.1/CMakeLists.txt
+diff --git a/linux-npu-driver-1.33.0/CMakeLists.txt b/linux-npu-driver-1.33.0/CMakeLists.txt
+index ceb1b87..640acd7 100644
+--- a/linux-npu-driver-1.33.0/CMakeLists.txt
++++ b/linux-npu-driver-1.33.0/CMakeLists.txt
 @@ -43,6 +43,7 @@ option(ENABLE_COMPILATION_FLAGS_OVERRIDE "Allow to override flags passed to comp
  # The npu_elf target is picked up from the compiler package
  option(ENABLE_NPU_ELF_BUILD "Enable building NPU Elf library in driver" OFF)
  option(ENABLE_TOOLS_BUILD "Enable building tools" OFF)
 +option(ENABLE_NPU_UNIT_TESTS "Enable building umd unit tests (requires GoogleTest)" OFF)
- 
- message(STATUS "option ENABLE_NPU_COMPILER_BUILD: ${ENABLE_NPU_COMPILER_BUILD}")
- message(STATUS "option ENABLE_NPU_PERFETTO_BUILD: ${ENABLE_NPU_PERFETTO_BUILD}")
-diff --git a/linux-npu-driver-1.32.1/umd/CMakeLists.txt b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
-index 680a874..d6b3527 100644
---- a/linux-npu-driver-1.32.1/umd/CMakeLists.txt
-+++ b/linux-npu-driver-1.32.1/umd/CMakeLists.txt
-@@ -59,8 +59,12 @@ include_directories(${VPU_SOURCE_DIR})
+ option(ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE "Allow to override path for dependencies in driver" OFF)
+
+ message(STATUS "option ENABLE_OPENVINO_PACKAGE: ${ENABLE_OPENVINO_PACKAGE}")
+diff --git a/linux-npu-driver-1.33.0/umd/CMakeLists.txt b/linux-npu-driver-1.33.0/umd/CMakeLists.txt
+index 1e0de53..6cc5a1d 100644
+--- a/linux-npu-driver-1.33.0/umd/CMakeLists.txt
++++ b/linux-npu-driver-1.33.0/umd/CMakeLists.txt
+@@ -61,8 +61,12 @@ include_directories(${VPU_SOURCE_DIR})
  include_directories(SYSTEM ${VPU_KMD_INCLUDE_DIR})
- 
+
  add_subdirectory_unique(vpu_driver/source)
 -add_subdirectory_unique(vpu_driver/unit_tests)
 +if (ENABLE_NPU_UNIT_TESTS)
 +    add_subdirectory_unique(vpu_driver/unit_tests)
 +endif()
- 
+
  add_subdirectory_unique(level_zero_driver/source)
 -add_subdirectory_unique(level_zero_driver/unit_tests)
 +if (ENABLE_NPU_UNIT_TESTS)
