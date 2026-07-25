@@ -10,7 +10,9 @@ set -exuo pipefail
 #  * ENABLE_VALIDATION_BUILD=OFF / ENABLE_TOOLS_BUILD=OFF — no test apps.
 #  * ENABLE_NPU_PERFETTO_BUILD=OFF — no Perfetto tracing (default).
 #  * ENABLE_NPU_UNIT_TESTS=OFF — added by patch 0002, gates the
-#    third_party/googletest-dependent umd unit_tests subdirs.
+#    third_party/googletest-dependent umd unit_tests subdirs. It defaults
+#    to ON upstream-style (like ENABLE_VALIDATION_BUILD), so passing it
+#    explicitly here is what actually turns the unit tests off.
 # Upstream's third_party/cmake/level-zero.cmake first tries pkg-config;
 # the level-zero-devel host dep above provides level-zero.pc so the
 # build does not need to fetch the kobuk PPA .debs or fall back to

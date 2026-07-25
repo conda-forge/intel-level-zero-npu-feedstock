@@ -1,19 +1,23 @@
-From: hmaarrfk <mark.harfouche@conda-forge.org>
+From: Mark Harfouche <mark.harfouche@conda-forge.org>
 Date: Sun, 10 May 2026 00:00:00 +0000
-Subject: umd: gate unit_tests subdirs on a new ENABLE_NPU_UNIT_TESTS flag
+Subject: umd: add ENABLE_NPU_UNIT_TESTS to gate the unit test subdirectories
 
-The umd CMakeLists.txt unconditionally `add_subdirectory()`s
-vpu_driver/unit_tests and level_zero_driver/unit_tests. Both pull in
-GoogleTest/GoogleMock headers and only exist for developer-style unit
-tests of the userspace driver. Downstream packagers that ship the
-runtime driver have no use for them, and forcing them to either vendor
-GoogleTest or carry a googletest find_package wrapper just to shut these
-subdirs up is unnecessary churn.
+umd/CMakeLists.txt adds vpu_driver/unit_tests and
+level_zero_driver/unit_tests unconditionally. Both link against GoogleTest
+and GoogleMock and exist for developing the driver itself, but there is no
+way to switch them off: ENABLE_VALIDATION_BUILD covers only the
+validation/ tree.
 
-Introduce a separate option ENABLE_NPU_UNIT_TESTS (default OFF) that
-gates both unit_tests subdir adds. The validation/ tree, which has its
-own larger test app and is gated by ENABLE_VALIDATION_BUILD, is
-untouched.
+A build that wants just the runtime driver therefore has to make
+GoogleTest available even though nothing it installs depends on it.
+
+Add an ENABLE_NPU_UNIT_TESTS option gating both subdirectory adds. It
+defaults to ON, matching ENABLE_VALIDATION_BUILD and leaving the existing
+behaviour of a default build unchanged; packagers that ship only the
+driver can now pass -DENABLE_NPU_UNIT_TESTS=OFF.
+
+Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
+
 ---
  CMakeLists.txt     | 1 +
  umd/CMakeLists.txt | 8 ++++++--
@@ -26,7 +30,7 @@ index ceb1b87..640acd7 100644
  # The npu_elf target is picked up from the compiler package
  option(ENABLE_NPU_ELF_BUILD "Enable building NPU Elf library in driver" OFF)
  option(ENABLE_TOOLS_BUILD "Enable building tools" OFF)
-+option(ENABLE_NPU_UNIT_TESTS "Enable building umd unit tests (requires GoogleTest)" OFF)
++option(ENABLE_NPU_UNIT_TESTS "Enable building umd unit tests" ON)
  option(ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE "Allow to override path for dependencies in driver" OFF)
 
  message(STATUS "option ENABLE_OPENVINO_PACKAGE: ${ENABLE_OPENVINO_PACKAGE}")

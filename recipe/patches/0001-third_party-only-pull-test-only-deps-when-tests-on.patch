@@ -1,25 +1,36 @@
-From: hmaarrfk <mark.harfouche@conda-forge.org>
+From: Mark Harfouche <mark.harfouche@conda-forge.org>
 Date: Sat, 25 Jul 2026 00:00:00 +0000
-Subject: third_party: only pull test-only vendored deps when tests are on
+Subject: third_party: only include test-only dependencies when tests are enabled
 
-Upstream unconditionally `include()`s third_party/cmake/googletest.cmake
-and third_party/cmake/yaml-cpp.cmake even though neither dependency is
-used by the driver itself:
+googletest and yaml-cpp are consumed exclusively by test code:
 
-* googletest is only linked from umd/*/unit_tests/ (gated by
-  ENABLE_NPU_UNIT_TESTS, see the companion patch) and from
-  validation/test-app-lib/.
-* yaml-cpp is only linked from validation/umd-test/.
+  * googletest by umd/vpu_driver/unit_tests, by
+    umd/level_zero_driver/unit_tests and by validation/test-app-lib
+  * yaml-cpp by validation/umd-test
 
-Both helper modules do try find_package() first, but they fall back to
-`add_subdirectory()` on the vendored third_party/googletest and
-third_party/yaml-cpp submodules when no system package is found. That
-fallback forces downstream packagers to either vendor those sources
-(against conda-forge policy) or install test-only dependencies into a
-driver-only build just to keep the configure step quiet.
+third_party/CMakeLists.txt nevertheless includes cmake/googletest.cmake
+and cmake/yaml-cpp.cmake unconditionally. Both helpers try find_package()
+first and then fall back to add_subdirectory() on the bundled submodule,
+so a build that enables neither the validation tests nor the unit tests
+still has to supply those dependencies: either by checking out submodules
+whose contents it never compiles, or by installing test-only development
+packages.
 
-Gate the two `include()`s on the options that actually need them. The
-library output of this driver (libze_intel_npu.so) is unchanged.
+That is awkward for distribution packaging, where bundled copies of
+third-party sources are commonly disallowed, and where the release
+tarballs do not carry submodule contents in the first place.
+
+Include the two helpers only when something in the build actually links
+against them. Builds using the default options are unaffected, since
+ENABLE_VALIDATION_BUILD defaults to ON.
+
+ENABLE_NPU_UNIT_TESTS is introduced by the accompanying "umd: add
+ENABLE_NPU_UNIT_TESTS" change. Should that be applied separately, CMake
+evaluates the undefined variable as false, which is the intended
+behaviour here.
+
+Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
+
 ---
  third_party/CMakeLists.txt | 17 +++++++++++++++--
  1 file changed, 15 insertions(+), 2 deletions(-)

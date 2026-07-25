@@ -1,24 +1,29 @@
-From: hmaarrfk <mark.harfouche@conda-forge.org>
+From: Mark Harfouche <mark.harfouche@conda-forge.org>
 Date: Mon, 25 May 2026 00:00:00 +0000
-Subject: umd: do not add -g to Release builds
+Subject: umd: do not append -g to Release builds
 
 umd/CMakeLists.txt unconditionally appends -g to the Release flags:
 
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -g")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
 
-The top-level CMakeLists.txt defaults CMAKE_BUILD_TYPE to Release, so
-every build is effectively RelWithDebInfo and the driver ships with full
-DWARF. For libze_intel_npu.so that is ~17 MB of .debug_* sections on top
-of ~1.4 MB of actual code: the installed library is 18.9 MB instead of
-1.4 MB (conda-build does not strip it), and the LTO link has to merge all
-of that debug info, which slows the build.
+The top-level CMakeLists.txt defaults CMAKE_BUILD_TYPE to Release, so an
+ordinary build is really RelWithDebInfo: libze_intel_npu.so is built with
+full DWARF, which dominates its installed size wherever the packaging does
+not strip it, and the LTO link has to merge all of that debug info.
 
-The debug info is never mapped at runtime (non-ALLOC sections), so it has
-no functional value in a distributed runtime package; if debug symbols
-are wanted they belong in a separate artifact, not the main library. Drop
-the -g additions and let the Release optimisation flags stand on their
-own.
+CMake already has a build type that means "optimised, with debug info".
+Anyone wanting debug symbols can select -DCMAKE_BUILD_TYPE=RelWithDebInfo
+explicitly, which is both discoverable and overridable; silently turning
+Release into something else is neither. The sections are non-ALLOC, so
+they are never mapped at runtime and add nothing to a distributed runtime
+package.
+
+Drop the -g additions and let the Release optimisation flags stand on
+their own.
+
+Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
+
 ---
  umd/CMakeLists.txt | 3 ---
  1 file changed, 3 deletions(-)
