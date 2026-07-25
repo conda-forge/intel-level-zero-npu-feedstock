@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 set -exuo pipefail
 
-# The main source is extracted into an explicit `target_directory` (see
-# recipe.yaml) so the vendored third_party sources can nest inside it.
-# The name is intentionally unversioned so this never needs touching on a
-# version bump.
-cd linux-npu-driver
-
+# The upstream tree is hoisted straight into $SRC_DIR (see recipe.yaml), so
+# there is nothing to cd into -- we are already at the project root.
+#
 # Keep the upstream build focused on the userspace driver:
 #  * ENABLE_NPU_COMPILER_BUILD=OFF — the LLVM/MLIR-based driver compiler
 #    is a much larger build and is shipped from a separate recipe.

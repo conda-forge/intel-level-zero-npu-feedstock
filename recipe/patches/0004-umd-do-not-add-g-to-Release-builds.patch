@@ -1,5 +1,5 @@
 From: hmaarrfk <mark.harfouche@conda-forge.org>
-Date: 2026-05-25
+Date: Mon, 25 May 2026 00:00:00 +0000
 Subject: umd: do not add -g to Release builds
 
 umd/CMakeLists.txt unconditionally appends -g to the Release flags:
@@ -19,18 +19,13 @@ no functional value in a distributed runtime package; if debug symbols
 are wanted they belong in a separate artifact, not the main library. Drop
 the -g additions and let the Release optimisation flags stand on their
 own.
-
-Paths in this patch are prefixed with `linux-npu-driver/`
-because the recipe extracts this source into an explicit
-`target_directory`, so patches are applied from one level above the
-upstream root.
 ---
- linux-npu-driver/umd/CMakeLists.txt | 3 ---
+ umd/CMakeLists.txt | 3 ---
  1 file changed, 3 deletions(-)
-diff --git a/linux-npu-driver/umd/CMakeLists.txt b/linux-npu-driver/umd/CMakeLists.txt
+diff --git a/umd/CMakeLists.txt b/umd/CMakeLists.txt
 index 7e92d47..170f3ac 100644
---- a/linux-npu-driver/umd/CMakeLists.txt
-+++ b/linux-npu-driver/umd/CMakeLists.txt
+--- a/umd/CMakeLists.txt
++++ b/umd/CMakeLists.txt
 @@ -34,9 +34,6 @@ else()
      add_compile_options(-Wno-unused-but-set-variable -Wno-unused-variable)
  endif()

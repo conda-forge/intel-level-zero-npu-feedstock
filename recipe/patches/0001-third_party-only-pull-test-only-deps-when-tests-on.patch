@@ -1,5 +1,5 @@
 From: hmaarrfk <mark.harfouche@conda-forge.org>
-Date: 2026-07-25
+Date: Sat, 25 Jul 2026 00:00:00 +0000
 Subject: third_party: only pull test-only vendored deps when tests are on
 
 Upstream unconditionally `include()`s third_party/cmake/googletest.cmake
@@ -20,18 +20,13 @@ driver-only build just to keep the configure step quiet.
 
 Gate the two `include()`s on the options that actually need them. The
 library output of this driver (libze_intel_npu.so) is unchanged.
-
-Paths in this patch are prefixed with `linux-npu-driver/`
-because the recipe extracts this source into an explicit
-`target_directory`, so patches are applied from one level above the
-upstream root.
 ---
- linux-npu-driver/third_party/CMakeLists.txt | 17 +++++++++++++++--
+ third_party/CMakeLists.txt | 17 +++++++++++++++--
  1 file changed, 15 insertions(+), 2 deletions(-)
-diff --git a/linux-npu-driver/third_party/CMakeLists.txt b/linux-npu-driver/third_party/CMakeLists.txt
+diff --git a/third_party/CMakeLists.txt b/third_party/CMakeLists.txt
 index da922e0..52f9d59 100644
---- a/linux-npu-driver/third_party/CMakeLists.txt
-+++ b/linux-npu-driver/third_party/CMakeLists.txt
+--- a/third_party/CMakeLists.txt
++++ b/third_party/CMakeLists.txt
 @@ -14,6 +14,19 @@ if (ENABLE_NPU_PERFETTO_BUILD)
    include(cmake/perfetto.cmake)
  endif()

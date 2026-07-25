@@ -1,5 +1,5 @@
 From: hmaarrfk <mark.harfouche@conda-forge.org>
-Date: 2026-07-25
+Date: Sat, 25 Jul 2026 00:00:00 +0000
 Subject: log: provide a gettid() fallback on glibc older than 2.30
 
 1.35.0 added a `[tid:]` field to the NPU_LOG output, implemented with
@@ -23,18 +23,13 @@ Every affected call site is covered without touching the generated
 headers: they all reach log.hpp through trace_ze_api.hpp. Behaviour on
 glibc >= 2.30 is unchanged, since the fallback is not compiled at all
 there.
-
-Paths in this patch are prefixed with `linux-npu-driver/`
-because the recipe extracts this source into an explicit
-`target_directory`, so patches are applied from one level above the
-upstream root.
 ---
- linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp | 18 ++++++++++++++++++
+ umd/vpu_driver/source/utilities/log.hpp | 18 ++++++++++++++++++
  1 file changed, 18 insertions(+)
-diff --git a/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp b/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp
+diff --git a/umd/vpu_driver/source/utilities/log.hpp b/umd/vpu_driver/source/utilities/log.hpp
 index c8af5b8..60359c1 100644
---- a/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp
-+++ b/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp
+--- a/umd/vpu_driver/source/utilities/log.hpp
++++ b/umd/vpu_driver/source/utilities/log.hpp
 @@ -12,8 +12,26 @@
  #include <cstdio>
  #include <cstring>

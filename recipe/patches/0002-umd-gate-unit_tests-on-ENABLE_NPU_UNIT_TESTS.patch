@@ -1,5 +1,5 @@
 From: hmaarrfk <mark.harfouche@conda-forge.org>
-Date: 2026-05-10
+Date: Sun, 10 May 2026 00:00:00 +0000
 Subject: umd: gate unit_tests subdirs on a new ENABLE_NPU_UNIT_TESTS flag
 
 The umd CMakeLists.txt unconditionally `add_subdirectory()`s
@@ -14,19 +14,14 @@ Introduce a separate option ENABLE_NPU_UNIT_TESTS (default OFF) that
 gates both unit_tests subdir adds. The validation/ tree, which has its
 own larger test app and is gated by ENABLE_VALIDATION_BUILD, is
 untouched.
-
-Paths in this patch are prefixed with `linux-npu-driver/`
-because the recipe extracts this source into an explicit
-`target_directory`, so patches are applied from one level above the
-upstream root.
 ---
- linux-npu-driver/CMakeLists.txt     | 1 +
- linux-npu-driver/umd/CMakeLists.txt | 8 ++++++--
+ CMakeLists.txt     | 1 +
+ umd/CMakeLists.txt | 8 ++++++--
  2 files changed, 7 insertions(+), 2 deletions(-)
-diff --git a/linux-npu-driver/CMakeLists.txt b/linux-npu-driver/CMakeLists.txt
+diff --git a/CMakeLists.txt b/CMakeLists.txt
 index ceb1b87..640acd7 100644
---- a/linux-npu-driver/CMakeLists.txt
-+++ b/linux-npu-driver/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
 @@ -43,6 +43,7 @@ option(ENABLE_COMPILATION_FLAGS_OVERRIDE "Allow to override flags passed to comp
  # The npu_elf target is picked up from the compiler package
  option(ENABLE_NPU_ELF_BUILD "Enable building NPU Elf library in driver" OFF)
@@ -35,10 +30,10 @@ index ceb1b87..640acd7 100644
  option(ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE "Allow to override path for dependencies in driver" OFF)
 
  message(STATUS "option ENABLE_OPENVINO_PACKAGE: ${ENABLE_OPENVINO_PACKAGE}")
-diff --git a/linux-npu-driver/umd/CMakeLists.txt b/linux-npu-driver/umd/CMakeLists.txt
+diff --git a/umd/CMakeLists.txt b/umd/CMakeLists.txt
 index 1e0de53..6cc5a1d 100644
---- a/linux-npu-driver/umd/CMakeLists.txt
-+++ b/linux-npu-driver/umd/CMakeLists.txt
+--- a/umd/CMakeLists.txt
++++ b/umd/CMakeLists.txt
 @@ -61,8 +61,12 @@ include_directories(${VPU_SOURCE_DIR})
  include_directories(SYSTEM ${VPU_KMD_INCLUDE_DIR})
 
