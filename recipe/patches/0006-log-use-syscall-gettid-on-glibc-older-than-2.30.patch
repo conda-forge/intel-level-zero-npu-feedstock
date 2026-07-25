@@ -1,0 +1,64 @@
+From: hmaarrfk <mark.harfouche@conda-forge.org>
+Date: 2026-07-25
+Subject: log: provide a gettid() fallback on glibc older than 2.30
+
+1.35.0 added a `[tid:]` field to the NPU_LOG output, implemented with
+direct calls to `gettid()` -- in the _LOG macro in
+umd/vpu_driver/source/utilities/log.hpp, and in ~500 more places across
+the generated umd/level_zero_driver/api/trace/ headers.
+
+glibc only provides the `gettid()` wrapper from 2.30 onwards; the syscall
+itself has always existed. Building against an older glibc therefore
+fails with
+
+    error: 'gettid' was not declared in this scope; did you mean 'getuid'?
+
+on essentially every translation unit whenever ENABLE_NPU_LOGGING is on,
+which is the default. conda-forge builds against a glibc 2.17 sysroot so
+that the resulting binaries stay usable on older distributions, and hits
+this throughout.
+
+Supply the missing wrapper in log.hpp, guarded on the glibc version.
+Every affected call site is covered without touching the generated
+headers: they all reach log.hpp through trace_ze_api.hpp. Behaviour on
+glibc >= 2.30 is unchanged, since the fallback is not compiled at all
+there.
+
+Paths in this patch are prefixed with `linux-npu-driver/`
+because the recipe extracts this source into an explicit
+`target_directory`, so patches are applied from one level above the
+upstream root.
+---
+ linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+diff --git a/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp b/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp
+index c8af5b8..60359c1 100644
+--- a/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp
++++ b/linux-npu-driver/umd/vpu_driver/source/utilities/log.hpp
+@@ -12,8 +12,26 @@
+ #include <cstdio>
+ #include <cstring>
+ #include <string_view>
++#include <sys/syscall.h>
+ #include <unistd.h>
+ 
++/*
++ * glibc only provides the gettid() wrapper from 2.30 onwards; the syscall
++ * itself has always been there. Supply the wrapper on older C libraries so
++ * the driver still builds against an older sysroot (conda-forge, for
++ * instance, packages against a glibc 2.17 sysroot to keep the binaries
++ * usable on older distributions).
++ *
++ * Defining it here covers every NPU_LOG call site: the _LOG macro below,
++ * and the generated umd/level_zero_driver/api/trace/ headers, which all
++ * reach this header through trace_ze_api.hpp.
++ */
++#if defined(__GLIBC__) && (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 30))
++static inline pid_t gettid() {
++    return static_cast<pid_t>(syscall(SYS_gettid));
++}
++#endif
++
+ enum LogLevel { QUIET = 0, ERROR, WARNING, INFO };
+ 
+ #define BIT(nr) ((1UL) << (nr))

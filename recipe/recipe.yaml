@@ -55,6 +55,10 @@ source:
       # DDI tables have members the driver leaves null. Keep that warning
       # non-fatal instead of failing the -Werror build.
       - patches/0005-relax-missing-field-initializers-for-newer-level-zero.patch
+      # 1.35.0 added a [tid:] field to the NPU_LOG output using glibc's
+      # gettid() wrapper, which only exists from glibc 2.30. conda-forge
+      # builds against the 2.17 sysroot, so use the raw syscall there.
+      - patches/0006-log-use-syscall-gettid-on-glibc-older-than-2.30.patch
   # third_party/level-zero-npu-extensions: NPU-specific Level Zero
   # extension headers. Not packaged separately on conda-forge; carried
   # as a vendored source archive at the upstream-pinned rev.
