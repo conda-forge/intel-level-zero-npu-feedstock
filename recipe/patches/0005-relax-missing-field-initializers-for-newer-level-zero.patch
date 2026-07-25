@@ -1,39 +1,41 @@
-From: hmaarrfk <mark.harfouche@conda-forge.org>
-Date: 2026-06-02
-Subject: relax -Werror=missing-field-initializers for newer Level Zero headers
+From: Mark Harfouche <mark.harfouche@conda-forge.org>
+Date: Tue, 2 Jun 2026 00:00:00 +0000
+Subject: cmake: do not make missing-field-initializers fatal
 
-This driver targets Level Zero 1.27.0 (cmake/level-zero.cmake), but the
-recipe builds it against the conda-forge `level-zero` package, currently
-1.29.0, so that the userspace driver matches the loader it is dlopened
-by at runtime. The newer loader headers add members to the Level Zero
-DDI tables (e.g. ze_command_list_dditable_t::pfnAppendMemoryCopyWith-
-Parameters, ze_device_dditable_t::pfnGetRuntimeRequirements). The driver
-fills those tables with designated initializers that only name the
-entries it implements, so the new members are value-initialized to null:
+cmake/level-zero.cmake targets Level Zero 1.27.0, but the driver is often
+built against whatever Level Zero loader the system provides, so that the
+userspace driver matches the loader that dlopens it at runtime. Newer
+loader headers add members to the Level Zero DDI tables, for example
+ze_command_list_dditable_t::pfnAppendMemoryCopyWithParameters and
+ze_device_dditable_t::pfnGetRuntimeRequirements.
+
+The driver fills those tables with designated initializers naming only the
+entries it implements, so any newer member is value-initialized to null:
 
     umd/level_zero_driver/api/ze_cmdlist.cpp:658: error: missing
       initializer for member
       '_ze_command_list_dditable_t::pfnAppendMemoryCopyWithParameters'
       [-Werror=missing-field-initializers]
 
-Leaving those entries null is correct — they are functions this driver
+Leaving those entries null is correct: they are entry points this driver
 predates, and the loader treats a null entry as unsupported. Only the
-combination with -Werror (cmake/compiler_flags.cmake) turns the warning
-into a build failure. Keep the warning but drop it back to non-fatal
-with -Wno-error=missing-field-initializers, rather than pinning the host
-to an older level-zero than the one users will run against.
+combination with -Werror in cmake/compiler_flags.cmake turns the warning
+into a build failure, which makes the driver fail to compile against any
+loader newer than the pinned one.
 
-Paths in this patch are prefixed with `linux-npu-driver-1.33.0/`
-because conda-build extracts this source with `no_hoist: true` and
-applies patches from the recipe's work_dir (one level above the
-upstream root).
+Keep the warning but drop it back to non-fatal, rather than requiring
+downstreams to pin an older Level Zero than the one their users run
+against.
+
+Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
+
 ---
- linux-npu-driver-1.33.0/cmake/compiler_flags.cmake | 6 ++++++
+ cmake/compiler_flags.cmake | 6 ++++++
  1 file changed, 6 insertions(+)
-diff --git a/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake b/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake
+diff --git a/cmake/compiler_flags.cmake b/cmake/compiler_flags.cmake
 index 0cc74c7..cfd1715 100644
---- a/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake
-+++ b/linux-npu-driver-1.33.0/cmake/compiler_flags.cmake
+--- a/cmake/compiler_flags.cmake
++++ b/cmake/compiler_flags.cmake
 @@ -5,6 +5,12 @@
  add_compile_options(
    # Compiler warnings

@@ -1,53 +1,52 @@
-From: hmaarrfk <mark.harfouche@conda-forge.org>
-Date: 2026-05-10
-Subject: umd: gate unit_tests subdirs on a new ENABLE_NPU_UNIT_TESTS flag
+From: Mark Harfouche <mark.harfouche@conda-forge.org>
+Date: Sun, 10 May 2026 00:00:00 +0000
+Subject: umd: add ENABLE_NPU_UNIT_TESTS to gate the unit test subdirectories
 
-The umd CMakeLists.txt unconditionally `add_subdirectory()`s
-vpu_driver/unit_tests and level_zero_driver/unit_tests. Both pull in
-GoogleTest/GoogleMock headers and only exist for developer-style unit
-tests of the userspace driver. Downstream packagers that ship the
-runtime driver have no use for them, and forcing them to either vendor
-GoogleTest or carry a googletest find_package wrapper just to shut these
-subdirs up is unnecessary churn.
+umd/CMakeLists.txt adds vpu_driver/unit_tests and
+level_zero_driver/unit_tests unconditionally. Both link against GoogleTest
+and GoogleMock and exist for developing the driver itself, but there is no
+way to switch them off: ENABLE_VALIDATION_BUILD covers only the
+validation/ tree.
 
-Introduce a separate option ENABLE_NPU_UNIT_TESTS (default OFF) that
-gates both unit_tests subdir adds. The validation/ tree, which has its
-own larger test app and is gated by ENABLE_VALIDATION_BUILD, is
-untouched.
+A build that wants just the runtime driver therefore has to make
+GoogleTest available even though nothing it installs depends on it.
 
-Paths in this patch are prefixed with `linux-npu-driver-1.33.0/`
-because conda-build extracts this source with `no_hoist: true` and
-applies patches from the recipe's work_dir (one level above the
-upstream root).
+Add an ENABLE_NPU_UNIT_TESTS option gating both subdirectory adds. It
+defaults to ON, matching ENABLE_VALIDATION_BUILD and leaving the existing
+behaviour of a default build unchanged; packagers that ship only the
+driver can now pass -DENABLE_NPU_UNIT_TESTS=OFF.
+
+Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
+
 ---
- linux-npu-driver-1.33.0/CMakeLists.txt     | 1 +
- linux-npu-driver-1.33.0/umd/CMakeLists.txt | 8 ++++++--
- 2 files changed, 7 insertions(+), 2 deletions(-)
-diff --git a/linux-npu-driver-1.33.0/CMakeLists.txt b/linux-npu-driver-1.33.0/CMakeLists.txt
-index ceb1b87..640acd7 100644
---- a/linux-npu-driver-1.33.0/CMakeLists.txt
-+++ b/linux-npu-driver-1.33.0/CMakeLists.txt
+ CMakeLists.txt | ~
+ umd/CMakeLists.txt | ~
+ 2 file(s) changed
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1f88c70..6518f11 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
 @@ -43,6 +43,7 @@ option(ENABLE_COMPILATION_FLAGS_OVERRIDE "Allow to override flags passed to comp
  # The npu_elf target is picked up from the compiler package
  option(ENABLE_NPU_ELF_BUILD "Enable building NPU Elf library in driver" OFF)
  option(ENABLE_TOOLS_BUILD "Enable building tools" OFF)
-+option(ENABLE_NPU_UNIT_TESTS "Enable building umd unit tests (requires GoogleTest)" OFF)
++option(ENABLE_NPU_UNIT_TESTS "Enable building umd unit tests" ON)
  option(ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE "Allow to override path for dependencies in driver" OFF)
-
+ 
  message(STATUS "option ENABLE_OPENVINO_PACKAGE: ${ENABLE_OPENVINO_PACKAGE}")
-diff --git a/linux-npu-driver-1.33.0/umd/CMakeLists.txt b/linux-npu-driver-1.33.0/umd/CMakeLists.txt
-index 1e0de53..6cc5a1d 100644
---- a/linux-npu-driver-1.33.0/umd/CMakeLists.txt
-+++ b/linux-npu-driver-1.33.0/umd/CMakeLists.txt
+diff --git a/umd/CMakeLists.txt b/umd/CMakeLists.txt
+index 1e0de53..f8694a8 100644
+--- a/umd/CMakeLists.txt
++++ b/umd/CMakeLists.txt
 @@ -61,8 +61,12 @@ include_directories(${VPU_SOURCE_DIR})
  include_directories(SYSTEM ${VPU_KMD_INCLUDE_DIR})
-
+ 
  add_subdirectory_unique(vpu_driver/source)
 -add_subdirectory_unique(vpu_driver/unit_tests)
 +if (ENABLE_NPU_UNIT_TESTS)
 +    add_subdirectory_unique(vpu_driver/unit_tests)
 +endif()
-
+ 
  add_subdirectory_unique(level_zero_driver/source)
 -add_subdirectory_unique(level_zero_driver/unit_tests)
 +if (ENABLE_NPU_UNIT_TESTS)

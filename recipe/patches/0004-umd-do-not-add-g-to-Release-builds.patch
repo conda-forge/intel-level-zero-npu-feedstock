@@ -1,45 +1,46 @@
-From: hmaarrfk <mark.harfouche@conda-forge.org>
-Date: 2026-05-25
-Subject: umd: do not add -g to Release builds
+From: Mark Harfouche <mark.harfouche@conda-forge.org>
+Date: Mon, 25 May 2026 00:00:00 +0000
+Subject: umd: do not append -g to Release builds
 
 umd/CMakeLists.txt unconditionally appends -g to the Release flags:
 
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -g")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
 
-The top-level CMakeLists.txt defaults CMAKE_BUILD_TYPE to Release, so
-every build is effectively RelWithDebInfo and the driver ships with full
-DWARF. For libze_intel_npu.so that is ~17 MB of .debug_* sections on top
-of ~1.4 MB of actual code: the installed library is 18.9 MB instead of
-1.4 MB (conda-build does not strip it), and the LTO link has to merge all
-of that debug info, which slows the build.
+The top-level CMakeLists.txt defaults CMAKE_BUILD_TYPE to Release, so an
+ordinary build is really RelWithDebInfo: libze_intel_npu.so is built with
+full DWARF, which dominates its installed size wherever the packaging does
+not strip it, and the LTO link has to merge all of that debug info. On
+x86_64 with GCC 14 the installed library measures 21.3 MB with the -g, and
+1.6 MB without it.
 
-The debug info is never mapped at runtime (non-ALLOC sections), so it has
-no functional value in a distributed runtime package; if debug symbols
-are wanted they belong in a separate artifact, not the main library. Drop
-the -g additions and let the Release optimisation flags stand on their
-own.
+CMake already has a build type that means "optimised, with debug info".
+Anyone wanting debug symbols can select -DCMAKE_BUILD_TYPE=RelWithDebInfo
+explicitly, which is both discoverable and overridable; silently turning
+Release into something else is neither. The sections are non-ALLOC, so
+they are never mapped at runtime and add nothing to a distributed runtime
+package.
 
-Paths in this patch are prefixed with `linux-npu-driver-1.33.0/`
-because conda-build extracts this source with `no_hoist: true` and
-applies patches from the recipe's work_dir (one level above the
-upstream root).
+Replace the -g additions with a comment pointing at RelWithDebInfo, and
+let the Release optimisation flags stand on their own.
+
+Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
+
 ---
- linux-npu-driver-1.33.0/umd/CMakeLists.txt | 3 ---
- 1 file changed, 3 deletions(-)
-diff --git a/linux-npu-driver-1.33.0/umd/CMakeLists.txt b/linux-npu-driver-1.33.0/umd/CMakeLists.txt
-index 7e92d47..170f3ac 100644
---- a/linux-npu-driver-1.33.0/umd/CMakeLists.txt
-+++ b/linux-npu-driver-1.33.0/umd/CMakeLists.txt
-@@ -34,9 +34,6 @@ else()
+ umd/CMakeLists.txt | ~
+ 1 file changed
+diff --git a/umd/CMakeLists.txt b/umd/CMakeLists.txt
+index 1e0de53..ccd2004 100644
+--- a/umd/CMakeLists.txt
++++ b/umd/CMakeLists.txt
+@@ -34,8 +34,8 @@ else()
      add_compile_options(-Wno-unused-but-set-variable -Wno-unused-variable)
  endif()
-
+ 
 -set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g")
 -set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
--
++# Release builds are optimised without debug info; select the
++# RelWithDebInfo build type if debug symbols are wanted.
+ 
  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DUMD_LOGLEVEL=${UMD_LOGLEVEL}")
-
- set(CMAKE_CXX_STANDARD 20)
---
-2.54.0
+ 

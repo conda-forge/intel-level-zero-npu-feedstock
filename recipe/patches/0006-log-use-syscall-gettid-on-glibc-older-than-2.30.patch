@@ -1,0 +1,61 @@
+From: Mark Harfouche <mark.harfouche@conda-forge.org>
+Date: Sat, 25 Jul 2026 00:00:00 +0000
+Subject: umd: provide a gettid() fallback for glibc older than 2.30
+
+The [tid:] field in the NPU_LOG output calls gettid() directly, both from
+the _LOG macro in umd/vpu_driver/source/utilities/log.hpp and from roughly
+500 places in the generated umd/level_zero_driver/api/trace/ headers.
+
+glibc only provides the gettid() wrapper from 2.30 onwards; the syscall
+itself has always been available. Building against an older glibc fails on
+essentially every translation unit whenever ENABLE_NPU_LOGGING is set,
+which is the default:
+
+    error: 'gettid' was not declared in this scope; did you mean 'getuid'?
+
+This affects anyone targeting an older baseline than the build host, which
+is common when packaging binaries intended to run on a range of
+distributions.
+
+Supply the missing wrapper in log.hpp, guarded on the glibc version. That
+covers every call site without touching the generated headers, since they
+all reach log.hpp through trace_ze_api.hpp, and so it also survives those
+headers being regenerated. On glibc 2.30 and newer the fallback is not
+compiled at all, leaving behaviour unchanged.
+
+Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
+
+---
+ umd/vpu_driver/source/utilities/log.hpp | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+diff --git a/umd/vpu_driver/source/utilities/log.hpp b/umd/vpu_driver/source/utilities/log.hpp
+index c8af5b8..60359c1 100644
+--- a/umd/vpu_driver/source/utilities/log.hpp
++++ b/umd/vpu_driver/source/utilities/log.hpp
+@@ -12,8 +12,26 @@
+ #include <cstdio>
+ #include <cstring>
+ #include <string_view>
++#include <sys/syscall.h>
+ #include <unistd.h>
+ 
++/*
++ * glibc only provides the gettid() wrapper from 2.30 onwards; the syscall
++ * itself has always been there. Supply the wrapper on older C libraries so
++ * the driver still builds against an older sysroot (conda-forge, for
++ * instance, packages against a glibc 2.17 sysroot to keep the binaries
++ * usable on older distributions).
++ *
++ * Defining it here covers every NPU_LOG call site: the _LOG macro below,
++ * and the generated umd/level_zero_driver/api/trace/ headers, which all
++ * reach this header through trace_ze_api.hpp.
++ */
++#if defined(__GLIBC__) && (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 30))
++static inline pid_t gettid() {
++    return static_cast<pid_t>(syscall(SYS_gettid));
++}
++#endif
++
+ enum LogLevel { QUIET = 0, ERROR, WARNING, INFO };
+ 
+ #define BIT(nr) ((1UL) << (nr))
