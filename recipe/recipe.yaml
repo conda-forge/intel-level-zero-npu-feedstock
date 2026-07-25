@@ -19,7 +19,7 @@ schema_version: 1
 # is available on conda-forge.
 
 context:
-  version: "1.33.0"
+  version: "1.35.0"
   lze_npu_extensions_rev: "c7cb5d218ca14f6a81b3ef0bb89e718e9fcdba8e"
   npu_compiler_elf_rev: "82c444bcb9feb0f55fa33e18fbd711ec35426fba"
 
@@ -35,7 +35,7 @@ source:
   # license_file paths below expect, and so the vendored third_party
   # sources nest inside it.
   - url: https://github.com/intel/linux-npu-driver/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: 2c25feabf471ae49d8dc99dca7c584113b0a25a3ef045ba834ce65f731fde7f5
+    sha256: c5f3e5fbec8e5d8fbed68cd1c40aaab26182fefb5a76286bfd341aa02bfbea02
     target_directory: linux-npu-driver-${{ version }}
     patches:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
