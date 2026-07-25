@@ -10,7 +10,9 @@ umd/CMakeLists.txt unconditionally appends -g to the Release flags:
 The top-level CMakeLists.txt defaults CMAKE_BUILD_TYPE to Release, so an
 ordinary build is really RelWithDebInfo: libze_intel_npu.so is built with
 full DWARF, which dominates its installed size wherever the packaging does
-not strip it, and the LTO link has to merge all of that debug info.
+not strip it, and the LTO link has to merge all of that debug info. On
+x86_64 with GCC 14 the installed library measures 21.3 MB with the -g, and
+1.6 MB without it.
 
 CMake already has a build type that means "optimised, with debug info".
 Anyone wanting debug symbols can select -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -19,27 +21,26 @@ Release into something else is neither. The sections are non-ALLOC, so
 they are never mapped at runtime and add nothing to a distributed runtime
 package.
 
-Drop the -g additions and let the Release optimisation flags stand on
-their own.
+Replace the -g additions with a comment pointing at RelWithDebInfo, and
+let the Release optimisation flags stand on their own.
 
 Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
 
 ---
- umd/CMakeLists.txt | 3 ---
- 1 file changed, 3 deletions(-)
+ umd/CMakeLists.txt | ~
+ 1 file changed
 diff --git a/umd/CMakeLists.txt b/umd/CMakeLists.txt
-index 7e92d47..170f3ac 100644
+index 1e0de53..ccd2004 100644
 --- a/umd/CMakeLists.txt
 +++ b/umd/CMakeLists.txt
-@@ -34,9 +34,6 @@ else()
+@@ -34,8 +34,8 @@ else()
      add_compile_options(-Wno-unused-but-set-variable -Wno-unused-variable)
  endif()
-
+ 
 -set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g")
 -set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
--
++# Release builds are optimised without debug info; select the
++# RelWithDebInfo build type if debug symbols are wanted.
+ 
  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DUMD_LOGLEVEL=${UMD_LOGLEVEL}")
-
- set(CMAKE_CXX_STANDARD 20)
---
-2.54.0
+ 
