@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -exuo pipefail
 
-# The main source is extracted with `no_hoist: true` (see meta.yaml) so
-# the original top-level directory is preserved as a subdir of $SRC_DIR.
-cd "linux-npu-driver-${PKG_VERSION}"
+# The main source is extracted into an explicit `target_directory` (see
+# recipe.yaml) so the vendored third_party sources can nest inside it.
+# The name is intentionally unversioned so this never needs touching on a
+# version bump.
+cd linux-npu-driver
 
 # Keep the upstream build focused on the userspace driver:
 #  * ENABLE_NPU_COMPILER_BUILD=OFF — the LLVM/MLIR-based driver compiler

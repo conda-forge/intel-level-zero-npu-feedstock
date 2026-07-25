@@ -23,17 +23,17 @@ into a build failure. Keep the warning but drop it back to non-fatal
 with -Wno-error=missing-field-initializers, rather than pinning the host
 to an older level-zero than the one users will run against.
 
-Paths in this patch are prefixed with `linux-npu-driver-1.35.0/`
-because conda-build extracts this source with `no_hoist: true` and
-applies patches from the recipe's work_dir (one level above the
-upstream root).
+Paths in this patch are prefixed with `linux-npu-driver/`
+because the recipe extracts this source into an explicit
+`target_directory`, so patches are applied from one level above the
+upstream root.
 ---
- linux-npu-driver-1.35.0/cmake/compiler_flags.cmake | 6 ++++++
+ linux-npu-driver/cmake/compiler_flags.cmake | 6 ++++++
  1 file changed, 6 insertions(+)
-diff --git a/linux-npu-driver-1.35.0/cmake/compiler_flags.cmake b/linux-npu-driver-1.35.0/cmake/compiler_flags.cmake
+diff --git a/linux-npu-driver/cmake/compiler_flags.cmake b/linux-npu-driver/cmake/compiler_flags.cmake
 index 0cc74c7..cfd1715 100644
---- a/linux-npu-driver-1.35.0/cmake/compiler_flags.cmake
-+++ b/linux-npu-driver-1.35.0/cmake/compiler_flags.cmake
+--- a/linux-npu-driver/cmake/compiler_flags.cmake
++++ b/linux-npu-driver/cmake/compiler_flags.cmake
 @@ -5,6 +5,12 @@
  add_compile_options(
    # Compiler warnings
