@@ -19,12 +19,12 @@ schema_version: 1
 # is available on conda-forge.
 
 context:
-  version: "1.35.0"
+  version: "1.38.0"
   # Submodule revisions as pinned by upstream at tag v${{ version }} (see
   # `git ls-tree v${{ version }} third_party/` in intel/linux-npu-driver).
   # These must be bumped alongside `version`.
   lze_npu_extensions_rev: "f9ad3bf89c2418d714aef2e6b96a5aafb12a1971"
-  npu_compiler_elf_rev: "a301d97e0717fb797c79ec51f8cdc13152878700"
+  npu_compiler_elf_rev: "d325f45f2cb405b5fa2ff17a30de9469f1641b73"
 
 package:
   name: intel-level-zero-npu
@@ -43,7 +43,7 @@ source:
   # checkout and sent upstream as-is, and a version bump can never
   # invalidate their paths.
   - url: https://github.com/intel/linux-npu-driver/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: c5f3e5fbec8e5d8fbed68cd1c40aaab26182fefb5a76286bfd341aa02bfbea02
+    sha256: 5584d03dcd37893b49cdb5f327578ab9afbc4a055d0fb66714e17c98c2821fd4
     patches:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
       - patches/0002-umd-gate-unit_tests-on-ENABLE_NPU_UNIT_TESTS.patch
@@ -81,7 +81,7 @@ source:
   # standalone install / CMake config), so vendor at build-time instead
   # of cutting a separate conda-forge package.
   - url: https://github.com/openvinotoolkit/npu_compiler_elf/archive/${{ npu_compiler_elf_rev }}.tar.gz
-    sha256: e6440ae3e1b2717084a7e05c439e976c984d762c6f67aba69a022c568b07ce2c
+    sha256: c3da6c465b4533a0cc2ca98eaddf91caf0beeb4ac8a561caff21972781e23608
     target_directory: third_party/npu_compiler_elf
 
 build:
