@@ -23,22 +23,28 @@ Signed-off-by: Mark Harfouche <mark.harfouche@conda-forge.org>
  umd/CMakeLists.txt | ~
  2 file(s) changed
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 1f88c70..6518f11 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -43,6 +43,7 @@ option(ENABLE_COMPILATION_FLAGS_OVERRIDE "Allow to override flags passed to comp
- # The npu_elf target is picked up from the compiler package
- option(ENABLE_NPU_ELF_BUILD "Enable building NPU Elf library in driver" OFF)
- option(ENABLE_TOOLS_BUILD "Enable building tools" OFF)
-+option(ENABLE_NPU_UNIT_TESTS "Enable building umd unit tests" ON)
- option(ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE "Allow to override path for dependencies in driver" OFF)
+@@ -44,6 +44,7 @@
+ set(ENABLE_NPU_ELF_BUILD_DEFAULT OFF)
+ set(ENABLE_TOOLS_BUILD_DEFAULT OFF)
+ set(ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE_DEFAULT OFF)
++set(ENABLE_NPU_UNIT_TESTS_DEFAULT ON)
+ 
+ option(ENABLE_OPENVINO_PACKAGE "Enable building the OpenVINO package" ${ENABLE_OPENVINO_PACKAGE_DEFAULT})
+ option(ENABLE_NPU_COMPILER_BUILD "Enable building compiler in driver" ${ENABLE_NPU_COMPILER_BUILD_DEFAULT})
+@@ -54,6 +55,7 @@
+ option(ENABLE_NPU_ELF_BUILD "Enable building NPU Elf library in driver" ${ENABLE_NPU_ELF_BUILD_DEFAULT})
+ option(ENABLE_TOOLS_BUILD "Enable building tools" ${ENABLE_TOOLS_BUILD_DEFAULT})
+ option(ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE "Allow to override path for dependencies in driver" ${ENABLE_NPU_ALT_DEPENDENCY_PATH_OVERRIDE_DEFAULT})
++option(ENABLE_NPU_UNIT_TESTS "Enable building umd unit tests" ${ENABLE_NPU_UNIT_TESTS_DEFAULT})
  
  message(STATUS "option ENABLE_OPENVINO_PACKAGE: ${ENABLE_OPENVINO_PACKAGE}")
+ message(STATUS "option ENABLE_NPU_COMPILER_BUILD: ${ENABLE_NPU_COMPILER_BUILD}")
 diff --git a/umd/CMakeLists.txt b/umd/CMakeLists.txt
-index 1e0de53..f8694a8 100644
 --- a/umd/CMakeLists.txt
 +++ b/umd/CMakeLists.txt
-@@ -61,8 +61,12 @@ include_directories(${VPU_SOURCE_DIR})
+@@ -61,8 +61,12 @@
  include_directories(SYSTEM ${VPU_KMD_INCLUDE_DIR})
  
  add_subdirectory_unique(vpu_driver/source)

@@ -24,7 +24,7 @@ context:
   # `git ls-tree v${{ version }} third_party/` in intel/linux-npu-driver).
   # These must be bumped alongside `version`.
   lze_npu_extensions_rev: "f9ad3bf89c2418d714aef2e6b96a5aafb12a1971"
-  npu_compiler_elf_rev: "a301d97e0717fb797c79ec51f8cdc13152878700"
+  npu_compiler_elf_rev: "d325f45f2cb405b5fa2ff17a30de9469f1641b73"
 
 package:
   name: intel-level-zero-npu
@@ -81,7 +81,7 @@ source:
   # standalone install / CMake config), so vendor at build-time instead
   # of cutting a separate conda-forge package.
   - url: https://github.com/openvinotoolkit/npu_compiler_elf/archive/${{ npu_compiler_elf_rev }}.tar.gz
-    sha256: e6440ae3e1b2717084a7e05c439e976c984d762c6f67aba69a022c568b07ce2c
+    sha256: c3da6c465b4533a0cc2ca98eaddf91caf0beeb4ac8a561caff21972781e23608
     target_directory: third_party/npu_compiler_elf
 
 build:
