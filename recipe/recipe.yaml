@@ -85,7 +85,7 @@ source:
     target_directory: third_party/npu_compiler_elf
 
 build:
-  number: 0
+  number: 1
   # Only the Linux userspace driver is supported (x86 intrinsics like
   # -msse4.2 / -mwaitpkg; conda-forge only builds linux-64 here). The bare
   # boolean form lets conda-smithy prune osx/win from the CI matrix.
@@ -116,6 +116,9 @@ tests:
         - binutils
     script:
       - test -f $PREFIX/lib/libze_intel_npu.so
+      - test -f $PREFIX/etc/conda/env_vars.d/intel-level-zero-npu.json
+      - grep -q ZE_ENABLE_ALT_DRIVERS $PREFIX/etc/conda/env_vars.d/intel-level-zero-npu.json
+      - grep -q libze_intel_npu.so.1 $PREFIX/etc/conda/env_vars.d/intel-level-zero-npu.json
       # Regression guard for the LTO / static-archive-index bug that
       # CMAKE_INTERPROCEDURAL_OPTIMIZATION fixes: libze_intel_npu.so
       # statically links the driver's own

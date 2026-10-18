@@ -39,3 +39,14 @@ cmake --build . --parallel "${CPU_COUNT}"
 cmake --install . --component level-zero-npu --prefix "$PREFIX"
 
 popd
+
+# Stand-in for https://github.com/conda-forge/level-zero-feedstock/pull/92:
+# until the loader searches its own directory, it never finds this driver in
+# $CONDA_PREFIX/lib. ZE_ENABLE_ALT_DRIVERS replaces discovery, so list every
+# driver the loader knows by default, not only this one.
+mkdir -p "$PREFIX/etc/conda/env_vars.d"
+cat > "$PREFIX/etc/conda/env_vars.d/intel-level-zero-npu.json" <<'EOF'
+{
+  "ZE_ENABLE_ALT_DRIVERS": "libze_intel_gpu.so.1,libze_intel_gpu_legacy1.so.1,libze_intel_vpu.so.1,libze_intel_npu.so.1"
+}
+EOF
