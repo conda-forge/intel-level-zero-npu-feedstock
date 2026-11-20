@@ -19,7 +19,7 @@ schema_version: 1
 # is available on conda-forge.
 
 context:
-  version: "1.38.0"
+  version: "1.39.1"
   # Submodule revisions as pinned by upstream at tag v${{ version }} (see
   # `git ls-tree v${{ version }} third_party/` in intel/linux-npu-driver).
   # These must be bumped alongside `version`.
@@ -43,7 +43,7 @@ source:
   # checkout and sent upstream as-is, and a version bump can never
   # invalidate their paths.
   - url: https://github.com/intel/linux-npu-driver/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: 5584d03dcd37893b49cdb5f327578ab9afbc4a055d0fb66714e17c98c2821fd4
+    sha256: afd07d0283f2a52894d7a52bad993897ed5709126f33b316012af094bc969d4a
     patches:
       - patches/0001-third_party-only-pull-test-only-deps-when-tests-on.patch
       - patches/0002-umd-gate-unit_tests-on-ENABLE_NPU_UNIT_TESTS.patch
@@ -85,7 +85,7 @@ source:
     target_directory: third_party/npu_compiler_elf
 
 build:
-  number: 1
+  number: 0
   # Only the Linux userspace driver is supported (x86 intrinsics like
   # -msse4.2 / -mwaitpkg; conda-forge only builds linux-64 here). The bare
   # boolean form lets conda-smithy prune osx/win from the CI matrix.
