@@ -23,8 +23,8 @@ context:
   # Submodule revisions as pinned by upstream at tag v${{ version }} (see
   # `git ls-tree v${{ version }} third_party/` in intel/linux-npu-driver).
   # These must be bumped alongside `version`.
-  lze_npu_extensions_rev: "f9ad3bf89c2418d714aef2e6b96a5aafb12a1971"
-  npu_compiler_elf_rev: "d325f45f2cb405b5fa2ff17a30de9469f1641b73"
+  lze_npu_extensions_rev: "ddbf8d65e2e22150e23efd383839aa80f84d4dac"
+  npu_compiler_elf_rev: "5f0cf383811c2481fac8799b31bbe88d83e1562d"
 
 package:
   name: intel-level-zero-npu
@@ -73,7 +73,7 @@ source:
   # extension headers. Not packaged separately on conda-forge; carried
   # as a vendored source archive at the upstream-pinned rev.
   - url: https://github.com/intel/level-zero-vpu-extensions/archive/${{ lze_npu_extensions_rev }}.tar.gz
-    sha256: 3255ea26d1d530a57a6558573cc233b717ecd34bf7adafd9401887ee4ddf5d6b
+    sha256: 0c8e27a3da0ed0b6947cfa8e6019dfd3d104226f6217a557de723ad288db79a4
     target_directory: third_party/level-zero-npu-extensions
   # third_party/npu_compiler_elf: small Apache-2.0 ELF reader/writer +
   # VPUX loader, statically linked into libze_intel_npu.so. Upstream is
@@ -81,7 +81,7 @@ source:
   # standalone install / CMake config), so vendor at build-time instead
   # of cutting a separate conda-forge package.
   - url: https://github.com/openvinotoolkit/npu_compiler_elf/archive/${{ npu_compiler_elf_rev }}.tar.gz
-    sha256: c3da6c465b4533a0cc2ca98eaddf91caf0beeb4ac8a561caff21972781e23608
+    sha256: 76b1c2c0f8b92b3b77807e186932893f961983cc55f93c8eaac3be0c147018f4
     target_directory: third_party/npu_compiler_elf
 
 build:
